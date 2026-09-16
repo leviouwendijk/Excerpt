@@ -64,11 +64,13 @@ public extension LinePresentation {
             public let text: String
             public let width: Int
             public let alignment: Alignment
+            public let role: Role?
 
             public init(
                 text: String,
                 width: Int? = nil,
-                alignment: Alignment = .leading
+                alignment: Alignment = .leading,
+                role: Role? = nil
             ) {
                 self.text = text
                 self.width = max(
@@ -76,12 +78,14 @@ public extension LinePresentation {
                     width ?? text.count
                 )
                 self.alignment = alignment
+                self.role = role
             }
 
             public static func number(
                 _ value: Int?,
                 width: Int,
-                missingCharacter: Character = "-"
+                missingCharacter: Character = "-",
+                role: Role? = nil
             ) -> Self {
                 let text: String
 
@@ -102,7 +106,8 @@ public extension LinePresentation {
                 return .init(
                     text: text,
                     width: width,
-                    alignment: .trailing
+                    alignment: .trailing,
+                    role: role
                 )
             }
 

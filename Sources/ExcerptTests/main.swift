@@ -134,6 +134,91 @@ func linePresentationRendersGuttersAndRoundedBlocks() throws {
     )
 }
 
+private struct TaggedStyling:
+    LinePresentationStyling
+{
+    func render(
+        role: LinePresentation.Role?,
+        text: String
+    ) -> String {
+        guard let role else {
+            return text
+        }
+
+        return "<\(role.rawValue)>"
+            + text
+            + "</\(role.rawValue)>"
+    }
+}
+
+func styledPresentationMeasuresRawText() throws {
+    let titleRole = LinePresentation.Role(
+        "title"
+    )
+    let warningRole = LinePresentation.Role(
+        "warning"
+    )
+    let lineRole = LinePresentation.Role(
+        "line"
+    )
+    let block = LinePresentation.Block(
+        title: .init(
+            role: titleRole,
+            text: "Example"
+        ),
+        rows: [
+            .init(
+                gutter: .init(
+                    columns: [
+                        .number(
+                            7,
+                            width: 2,
+                            role: lineRole
+                        ),
+                    ]
+                ),
+                segments: [
+                    .init(
+                        role: warningRole,
+                        text: "value"
+                    ),
+                ]
+            ),
+        ],
+        border: .rounded
+    )
+    let rendered = LinePresentation.Basic.render(
+        block,
+        styling: TaggedStyling()
+    )
+
+    try expect(
+        rendered.contains(
+            "<title>Example</title>"
+        ),
+        "title role styling"
+    )
+    try expect(
+        rendered.contains(
+            "<line>7</line>"
+        ),
+        "gutter column role styling"
+    )
+    try expect(
+        rendered.contains(
+            "<warning>value</warning>"
+        ),
+        "segment role styling"
+    )
+    try expect(
+        rendered.hasSuffix(
+            "╰──────────╯"
+        ),
+        "box width is measured from raw text rather than styled output"
+    )
+}
+
 try sourceExcerptCoalescesContextAndExactRanges()
 try linePresentationRendersGuttersAndRoundedBlocks()
+try styledPresentationMeasuresRawText()
 print("ExcerptTests: passed")

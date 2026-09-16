@@ -3,8 +3,22 @@ public extension LinePresentation {
         public static func render(
             _ rows: [Row]
         ) -> String {
+            render(
+                rows,
+                styling: PlainLinePresentationStyling()
+            )
+        }
+
+        public static func render(
+            _ rows: [Row],
+            styling: any LinePresentationStyling
+        ) -> String {
             rows
-                .map(\.plainText)
+                .map { row in
+                    row.rendered(
+                        using: styling
+                    )
+                }
                 .joined(
                     separator: "\n"
                 )
@@ -13,10 +27,21 @@ public extension LinePresentation {
         public static func render(
             _ plan: Plan
         ) -> String {
+            render(
+                plan,
+                styling: PlainLinePresentationStyling()
+            )
+        }
+
+        public static func render(
+            _ plan: Plan,
+            styling: any LinePresentationStyling
+        ) -> String {
             plan.blocks
                 .map { block in
                     render(
-                        block
+                        block,
+                        styling: styling
                     )
                 }
                 .joined(
@@ -30,20 +55,35 @@ public extension LinePresentation {
         public static func render(
             _ block: Block
         ) -> String {
+            render(
+                block,
+                styling: PlainLinePresentationStyling()
+            )
+        }
+
+        public static func render(
+            _ block: Block,
+            styling: any LinePresentationStyling
+        ) -> String {
             switch block.border {
             case .none:
                 var lines: [String] = []
 
                 if let title = block.title {
                     lines.append(
-                        title.text
+                        styling.render(
+                            role: title.role,
+                            text: title.text
+                        )
                     )
                 }
 
                 lines.append(
-                    contentsOf: block.rows.map(
-                        \.plainText
-                    )
+                    contentsOf: block.rows.map { row in
+                        row.rendered(
+                            using: styling
+                        )
+                    }
                 )
 
                 return lines.joined(
@@ -53,13 +93,15 @@ public extension LinePresentation {
             case .square:
                 return renderBox(
                     block,
-                    characters: .square
+                    characters: .square,
+                    styling: styling
                 )
 
             case .rounded:
                 return renderBox(
                     block,
-                    characters: .rounded
+                    characters: .rounded,
+                    styling: styling
                 )
             }
         }
@@ -93,19 +135,25 @@ public extension LinePresentation {
 
         private static func renderBox(
             _ block: Block,
-            characters: BoxCharacters
+            characters: BoxCharacters,
+            styling: any LinePresentationStyling
         ) -> String {
-            let rows = block.rows.map(
+            let rawRows = block.rows.map(
                 \.plainText
             )
-            let title = block.title?.text
+            let renderedRows = block.rows.map { row in
+                row.rendered(
+                    using: styling
+                )
+            }
+            let title = block.title
             let titleWidth = title.map { value in
-                value.count + 1
+                value.text.count + 1
             } ?? 0
             let contentWidth = max(
                 1,
                 titleWidth,
-                rows.map(\.count).max() ?? 0
+                rawRows.map(\.count).max() ?? 0
             )
             let innerWidth = contentWidth + 2
             let horizontal = String(
@@ -114,13 +162,18 @@ public extension LinePresentation {
             let top: String
 
             if let title {
+                let renderedTitle = styling.render(
+                    role: title.role,
+                    text: title.text
+                )
                 let prefix = horizontal
                     + " "
-                    + title
+                    + renderedTitle
                     + " "
+                let rawPrefixWidth = title.text.count + 3
                 let remainder = max(
                     0,
-                    innerWidth - prefix.count
+                    innerWidth - rawPrefixWidth
                 )
 
                 top = String(
@@ -147,17 +200,21 @@ public extension LinePresentation {
                     )
             }
 
-            let body = rows.map { row in
+            let body = zip(
+                rawRows,
+                renderedRows
+            )
+            .map { rawRow, renderedRow in
                 String(
                     characters.vertical
                 )
                     + " "
-                    + row
+                    + renderedRow
                     + String(
                         repeating: " ",
                         count: max(
                             0,
-                            contentWidth - row.count
+                            contentWidth - rawRow.count
                         )
                     )
                     + " "
