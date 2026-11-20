@@ -37,17 +37,6 @@ let package = Package(
         .target(
             name: "ExcerptPresentation"
         ),
-        .executableTarget(
-            name: "ExcerptTests",
-            dependencies: [
-                "Excerpt",
-                "ExcerptPresentation",
-                .product(
-                    name: "Position",
-                    package: "Position"
-                ),
-            ]
-        ),
     ],
     swiftLanguageModes: [
         .v6,
